@@ -1,0 +1,36 @@
+name: Project Keep-Alive Service
+
+on:
+  schedule:
+    # Runs every 1 hour (the '0 * * * *' syntax)
+    # This ensures Vercel and Databases stay "warm"
+    - cron: '0 * * * *'
+  workflow_dispatch: # This adds a "Run Now" button for testing
+
+jobs:
+  uptime_ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping All Portfolio Projects
+        run: |
+          # List your URLs here
+          urls=(
+            "https://reactnd-employee-polls.vercel.app"
+            "https://nextjs-blog-liard-eight-31.vercel.app"
+            "https://nextjs-tau-liart-39.vercel.app"
+            "https://nextjs-dashboard-pi-one-smn5k4ky6i.vercel.app"
+            "https://reactnd-project-myreads-tau.vercel.app"
+          )
+          
+          echo "Starting Uptime Check..."
+          for url in "${urls[@]}"; do
+            echo -n "Checking $url ... "
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+            echo "HTTP Status: $status_code"
+            
+            # Optional: Fail the build if a site is down
+            if [ "$status_code" -ne 200 ] && [ "$status_code" -ne 301 ] && [ "$status_code" -ne 308 ]; then
+              echo "⚠️ WARNING: $url might be down or redirecting!"
+            fi
+          done
+          echo "All pings complete."
