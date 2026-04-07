@@ -2,10 +2,9 @@ name: Project Keep-Alive Service
 
 on:
   schedule:
-    # Runs every 1 hour (the '0 * * * *' syntax)
-    # This ensures Vercel and Databases stay "warm"
+    # Runs every 1 hour
     - cron: '0 * * * *'
-  workflow_dispatch: # This adds a "Run Now" button for testing
+  workflow_dispatch: # Allows manual trigger via "Run workflow" button
 
 jobs:
   uptime_ping:
@@ -13,7 +12,7 @@ jobs:
     steps:
       - name: Ping All Portfolio Projects
         run: |
-          # List your URLs here
+          # 1. Define the URLs
           urls=(
             "https://reactnd-employee-polls.vercel.app"
             "https://nextjs-blog-liard-eight-31.vercel.app"
@@ -22,15 +21,31 @@ jobs:
             "https://reactnd-project-myreads-tau.vercel.app"
           )
           
-          echo "Starting Uptime Check..."
+          # 2. Initialize the GitHub Summary Page
+          echo "### 🛡️ Uptime Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "Last checked on: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Project URL | Status Code | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          
+          # 3. Loop through URLs, Ping, and write to Summary
           for url in "${urls[@]}"; do
-            echo -n "Checking $url ... "
+            echo "Pinging $url..."
             status_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
-            echo "HTTP Status: $status_code"
             
-            # Optional: Fail the build if a site is down
-            if [ "$status_code" -ne 200 ] && [ "$status_code" -ne 301 ] && [ "$status_code" -ne 308 ]; then
-              echo "⚠️ WARNING: $url might be down or redirecting!"
+            # Determine status emoji
+            if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 301 ] || [ "$status_code" -eq 308 ]; then
+              result="✅ Healthy"
+            else
+              result="⚠️ Check Needed"
             fi
+            
+            # Write row to the Summary table
+            echo "| [$url]($url) | **$status_code** | $result |" >> $GITHUB_STEP_SUMMARY
           done
+
+          # 4. Add the Footer Link back to the Repository
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🏠 [Back to Master Repository](https://github.com/thounda/uptime-service)" >> $GITHUB_STEP_SUMMARY
           echo "All pings complete."
